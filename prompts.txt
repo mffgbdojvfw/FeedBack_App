@@ -1,0 +1,121 @@
+1. Create a main folder named Feedback_App
+2. Inside it, create two folders:
+   - backend
+   - frontend
+3. Open the backend folder in VS Code
+4. Run command: npm init -y
+5. Install required dependencies:
+   npm install express mongoose cors dotenv
+6. Install development dependency:
+   npm install nodemon --save-dev
+7. Create a file named server.js
+8. Create a folder named models
+9. Inside models, create a file named Feedback.js
+10. Create a .env file in backend folder
+11. Add this inside .env:
+MONGODB_URI=your_mongodb_atlas_connection_string
+PORT=5000
+12. Add this code:
+
+import mongoose from 'mongoose';
+
+const feedbackSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String },
+  message: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  createdAt: { type: Date, default: Date.now }
+});
+
+export default mongoose.model('Feedback', feedbackSchema);
+13. Add this code:
+
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import Feedback from './models/Feedback.js';
+
+dotenv.config();
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.log(err));
+
+// POST feedback
+app.post('/feedback', async (req, res) => {
+  try {
+    const { name, email, message, rating } = req.body;
+    if (!name || !message) {
+      return res.status(400).json({ error: 'Name and message are required' });
+    }
+    const newFeedback = new Feedback({ name, email, message, rating });
+    await newFeedback.save();
+    res.status(201).json(newFeedback);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET all feedback
+app.get('/feedback', async (req, res) => {
+  const feedbacks = await Feedback.find().sort({ createdAt: -1 });
+  res.json(feedbacks);
+});
+
+// GET stats
+app.get('/stats', async (req, res) => {
+  const feedbacks = await Feedback.find();
+  const total = feedbacks.length;
+  const avg = total ? (feedbacks.reduce((a, b) => a + b.rating, 0) / total).toFixed(2) : 0;
+  const positive = feedbacks.filter(f => f.rating >= 4).length;
+  const negative = feedbacks.filter(f => f.rating < 3).length;
+  res.json({ total, averageRating: avg, positive, negative });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+14. Add in package.json:
+   "scripts": {
+     "start": "node server.js",
+     "dev": "nodemon server.js"
+   }
+15. Start backend:
+   npm run dev
+16. Visit:
+   http://localhost:5000/feedback
+   http://localhost:5000/stats
+17. Push backend to GitHub
+18. Go to https://render.com
+19. Click “New Web Service”
+20. Connect your GitHub repo
+21. Root Directory: backend
+22. Build Command: npm install
+23. Start Command: npm start
+24. Add Environment Variables:
+    MONGODB_URI=your_mongo_url
+    PORT=10000
+    NODE_ENV=production
+25. Deploy and copy your Render URL (example: https://feedback-app-kpbr.onrender.com)
+26. Open terminal in Feedback_App folder
+27. Run: npm create vite@latest frontend
+28. Choose React → JavaScript
+29. Navigate into frontend folder:
+    cd frontend
+30. Install dependencies:
+    npm install
+31. Create a file named .env inside frontend folder
+32. Add this line:
+REACT_APP_API_URL=https://feedback-app-kpbr.onrender.com
+33. Inside frontend/src, create folders:
+   - components
+   - services
+34. Inside services, create api.js
+35. Inside components, create:
+   - FeedbackForm.jsx
+   - FeedbackTable.jsx
+   - AnalyticsCards.jsx
